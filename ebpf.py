@@ -285,18 +285,18 @@ class EBPFDecompiler(gdb.Command):
     def invoke (self, arg, input):
         n = int(gdb.parse_and_eval(arg))
         self.prog = Program(n)
-        disasm = self.decompile(self.prog)
+        disasm = self.decompile()
         
         lines = [f"\t\x1B[34m0x{hex(line[0])[2:].rjust(8, '0')}\x1B[m:\t{line[1]}" for line in disasm]
                 
         print('\n'.join(lines))
 
-    def decompile (self, prog: Program):
+    def decompile (self):
         instrs = list()
         
         self.pc = 0
 
-        for _ in range(prog.len):
+        for _ in range(self.prog.len):
             instr = self.instruction()
             old = self.pc
             self.pc += instr.length()

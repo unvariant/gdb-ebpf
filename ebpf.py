@@ -89,7 +89,13 @@ class ALU:
             self.src = encoding.src
 
     def assemble (self, _):
-        return self.code.to_str() + ' ' + to_str(self.dst) + ', ' + to_str(src)
+        mode = ''
+        if self.code == self.Code.bswap:
+            if self.source == self.source.ebpf_k:
+                mode = ".LE"
+            else:
+                mode = ".BE"
+        return self.code.to_str() + mode + ' ' + to_str(self.dst) + ', ' + to_str(self.src)
 
     def length (self):
         return 8

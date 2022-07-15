@@ -27,11 +27,8 @@ class Program:
             return int.from_bytes(self.buffer[pc:pc+8], "little")
 
 class EBPFEnum (enum.Enum):
-    def to_str (self):
-        return self.name[5:]
-
     def __str__ (self):
-        return self.to_str()
+        return self.name[5:]
 
 class Size (EBPFEnum):
     ebpf_word = 0x00
@@ -95,7 +92,8 @@ class ALU:
                 mode = ".LE"
             else:
                 mode = ".BE"
-        return self.code.to_str() + mode + ' ' + to_str(self.dst) + ', ' + to_str(self.src)
+        instr = str(self.code)
+        return f"{instr}{mode} {to_str(self.dst)}, {to_str(self.src)}"
 
     def length (self):
         return 8
@@ -142,7 +140,7 @@ class Jmp:
             self.offset = None
 
     def assemble (self, pc):
-        instr = self.code.to_str()
+        instr = str(self.code)
         args = list()
 
         if self.args != None:
@@ -150,7 +148,7 @@ class Jmp:
         if self.offset != None:
             self.target = pc + self.offset
             args.append(pc + self.offset)
-        return instr + ' ' + ", ".join(map(to_str, args))
+        return f"{instr} {', '.join(map(to_str, args))}"
 
     def length (self):
         return 8

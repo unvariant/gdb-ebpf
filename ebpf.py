@@ -1,14 +1,14 @@
 import enum
 import gdb
 
-def to_str (n):
+def to_str (n) -> str:
     if type(n) == int:
         return hex(n)
     else:
         return str(n)
 
 class Program:
-    def __init__ (self, addr):
+    def __init__ (self, addr: int):
         p = gdb.inferiors()[0]
         self.len = int.from_bytes(p.read_memory(addr, 2).tobytes(), "little")
         self.prog_addr = int.from_bytes(p.read_memory(addr + 8, 8).tobytes(), "little")
@@ -20,14 +20,14 @@ class Program:
 
         self.buffer += b'\x00' * 7
 
-    def read (self, pc):
+    def read (self, pc: int) -> int:
         if pc > self.max:
             return 0
         else:
             return int.from_bytes(self.buffer[pc:pc+8], "little")
 
 class EBPFEnum (enum.Enum):
-    def __str__ (self):
+    def __str__ (self) -> str:
         return self.name[5:]
 
 class Size (EBPFEnum):
@@ -70,7 +70,12 @@ class Encoding:
 
 class IllegalInstruction(Exception): pass
 
-class ALU:
+class Instruction:
+    def assemble (self, pc: int) -> str: pass
+
+    def length (self) -> int: return 8
+
+class ALU (Instruction):
     def __init__ (self, encoding: Encoding):
         opcode = encoding.opcode
         source = self.Source(opcode >> 3 & 1)
@@ -85,7 +90,7 @@ class ALU:
             self.dst = encoding.dst
             self.src = encoding.src
 
-    def assemble (self, _):
+    def assemble (self, _) -> str:
         mode = ''
         if self.code == self.Code.bswap:
             if self.source == self.source.ebpf_k:
@@ -94,9 +99,6 @@ class ALU:
                 mode = ".BE"
         instr = str(self.code)
         return f"{instr}{mode} {to_str(self.dst)}, {to_str(self.src)}"
-
-    def length (self):
-        return 8
 
     class Source (EBPFEnum):
         ebpf_k = 0x00
@@ -118,7 +120,7 @@ class ALU:
         ebpf_asr = 0x0C
         ebpf_bswap = 0x0D
 
-class Jmp:
+class Jmp (Instruction):
     def __init__ (self, encoding: Encoding):
         opcode = encoding.opcode
         source = self.Source(opcode >> 3 & 1)
@@ -139,7 +141,7 @@ class Jmp:
         if self.code == self.Code.ebpf_exit:
             self.offset = None
 
-    def assemble (self, pc):
+    def assemble (self, pc: int) -> str:
         instr = str(self.code)
         args = list()
 
@@ -149,9 +151,6 @@ class Jmp:
             self.target = pc + self.offset
             args.append(pc + self.offset)
         return f"{instr} {', '.join(map(to_str, args))}"
-
-    def length (self):
-        return 8
 
     class Source (EBPFEnum):
         ebpf_k = 0x00
@@ -173,7 +172,7 @@ class Jmp:
         ebpf_jslt = 0xC
         ebpf_jsle = 0xD
 
-class Memory:
+class Memory (Instruction):
     def __init__ (self, encoding: Encoding, next_dword: int):
         opcode = encoding.opcode
 
@@ -229,14 +228,14 @@ class Memory:
         else:
             raise IllegalInstruction
 
-    def assemble (self, _):                
+    def assemble (self, _) -> str:                
         size = str(self.size)
         instr = str(self.code)
         dst = to_str(self.dst)
 
         return f"{instr} {dst}, {size} [{' + '.join(map(to_str, self.args))}]"
 
-    def length (self):
+    def length (self) -> int:
         if self.mode == self.Mode.ebpf_imm:
             return 16
         else:
@@ -263,12 +262,9 @@ class Memory:
         ebpf_xchg = 0xe1
         ebpf_cmpxchg = 0xf1    
 
-class Bad:
-    def assemble (self, pc):
+class Bad (Instruction):
+    def assemble (self, _) -> str:
         return "(bad)"
-
-    def length (self):
-        return 8
 
 class EBPFDecompiler(gdb.Command):
     def __init__ (self):
@@ -280,7 +276,7 @@ class EBPFDecompiler(gdb.Command):
         self.pc = None
         self.prog = None
 
-    def invoke (self, arg, input):
+    def invoke (self, arg: str, from_tty: bool) -> None:
         n = int(gdb.parse_and_eval(arg))
         self.prog = Program(n)
         disasm = self.decompile()
@@ -289,7 +285,7 @@ class EBPFDecompiler(gdb.Command):
                 
         print('\n'.join(lines))
 
-    def decompile (self):
+    def decompile (self) -> list:
         instrs = list()
         
         self.pc = 0
@@ -302,7 +298,7 @@ class EBPFDecompiler(gdb.Command):
 
         return instrs
 
-    def instruction (self):
+    def instruction (self) -> Instruction:
         try:
             dword = self.prog.read(self.pc)
             next_dword = self.prog.read(self.pc + 8)

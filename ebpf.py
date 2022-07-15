@@ -74,7 +74,7 @@ class Encoding:
 class IllegalInstruction(Exception): pass
 
 class ALU:
-    def __init__ (self, encoding: Encoding, prog: Program):
+    def __init__ (self, encoding: Encoding):
         opcode = encoding.opcode
         source = self.Source(opcode >> 3 & 1)
     
@@ -121,7 +121,7 @@ class ALU:
         ebpf_bswap = 0x0D
 
 class Jmp:
-    def __init__ (self, encoding: Encoding, prog: Program):
+    def __init__ (self, encoding: Encoding):
         opcode = encoding.opcode
         source = self.Source(opcode >> 3 & 1)
     
@@ -312,9 +312,9 @@ class EBPFDecompiler(gdb.Command):
             if encoding.type in (Type.ebpf_ld, Type.ebpf_ldx, Type.ebpf_st, Type.ebpf_stx):
                 return Memory(encoding, next_dword)
             elif encoding.type in (Type.ebpf_alu32, Type.ebpf_alu64):
-                return ALU(encoding, next_dword)
+                return ALU(encoding)
             elif encoding.type in (Type.ebpf_jmp32, Type.ebpf_jmp64):
-                return Jmp(encoding, next_dword)
+                return Jmp(encoding)
             else:
                 raise IllegalInstruction
         except:

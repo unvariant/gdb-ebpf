@@ -89,11 +89,7 @@ class ALU:
             self.src = encoding.src
 
     def assemble (self, _):
-        if type(self.src) == Register:
-            src = self.src.to_str()
-        else:
-            src = hex(self.src)
-        return self.code.to_str() + ' ' + self.dst.to_str() + ', ' + src
+        return self.code.to_str() + ' ' + to_str(self.dst) + ', ' + to_str(src)
 
     def length (self):
         return 8
@@ -264,9 +260,6 @@ class Memory:
         ebpf_cmpxchg = 0xf1    
 
 class Bad:
-    def __init__ (self):
-        pass
-
     def assemble (self, pc):
         return "(bad)"
 

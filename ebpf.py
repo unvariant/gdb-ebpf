@@ -180,7 +180,6 @@ class Memory:
         self.code = encoding.type
         self.size = Size(opcode >> 3 & 0b11)
         self.mode = self.Mode(opcode >> 5)
-        self.offset = encoding.offset
         self.args = list()
 
         if self.code == Type.ebpf_ldx:

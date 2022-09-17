@@ -149,7 +149,7 @@ class Jmp (Instruction):
             args = [arg for arg in self.args]
         if self.offset != None:
             self.target = pc + self.offset * 8
-            args.append(pc + self.offset)
+            args.append(self.target)
         return f"{instr} {', '.join(map(to_str, args))}"
 
     class Source (EBPFEnum):

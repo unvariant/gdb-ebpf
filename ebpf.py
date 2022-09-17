@@ -148,7 +148,7 @@ class Jmp (Instruction):
         if self.args != None:
             args = [arg for arg in self.args]
         if self.offset != None:
-            self.target = pc + self.offset
+            self.target = pc + self.offset * 8
             args.append(pc + self.offset)
         return f"{instr} {', '.join(map(to_str, args))}"
 
